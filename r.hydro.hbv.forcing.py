@@ -111,7 +111,21 @@ def main():
                 )
                 continue
             date = row["start"].split(" ")[0]  # "YYYY-MM-DD HH:MM:SS" -> date
-            writer.writerow([ids[zone], date, row["mean"]])
+            try:
+                mean = float(row["mean"])
+            except (KeyError, ValueError):
+                # a zone with no valid (non-NULL) cells for this
+                # timestep -- t.rast.univar leaves "mean" blank rather
+                # than reporting 0, which a plain float() re-validates
+                # here since db.in.ogr's CSV driver otherwise aborts
+                # the whole import on the first such row instead of
+                # just skipping it.
+                gs.warning(
+                    "Zone %d has no valid mean for %s -- skipped"
+                    % (zone, date)
+                )
+                continue
+            writer.writerow([ids[zone], date, mean])
             n_rows += 1
 
     with open(long_csvt, "w") as f:
