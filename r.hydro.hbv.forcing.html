@@ -1,0 +1,54 @@
+<h2>DESCRIPTION</h2>
+
+<em>r.hydro.hbv.forcing</em> turns a daily raster time series (a
+space-time raster dataset, STRDS -- e.g. an ERA5-Land precipitation or
+temperature series already imported with <em>t.rast.import</em>, or any
+other daily raster series registered into a STRDS) into the
+long-format (<tt>station_id</tt>, <tt>date</tt>, <tt>value</tt>) DB
+table that <a href="r.hydro.hbv.html">r.hydro.hbv</a>'s
+<tt>precipitation_table=</tt>/<tt>temperature_table=</tt>/etc. options
+expect, via one <em>t.rast.univar</em> zonal-mean call against a
+<a href="r.hydro.hbv.basins.html">r.hydro.hbv.basins</a>-delineated
+basins raster.
+
+<p>
+<b>basins</b> is the delineated basins raster (<em>r.hydro.hbv.basins</em>'
+<tt>basins=</tt> output); <b>basins_vector</b> is its vectorized
+counterpart (<tt>basins_vector=</tt> output), used only to look up each
+basin's <b>basin_id_column</b> value (default <tt>basin_id</tt>) so the
+output table's <tt>station_id</tt> matches what <em>r.hydro.hbv</em> (or
+<em>r.hydro.hbv.basins</em> itself) already uses.
+
+<h2>EXAMPLE</h2>
+
+<div class="code"><pre>
+# basins already delineated by r.hydro.hbv.basins as basins/basins_v
+t.create output=era5_precip type=strds temporaltype=absolute \
+  title="ERA5-Land precipitation" description="..."
+t.register input=era5_precip maps=`g.list type=raster pattern="era5_precip_*" separator=,` \
+  start="2001-01-01" increment="1 days"
+
+r.hydro.hbv.forcing strds=era5_precip basins=basins basins_vector=basins_v \
+  output_table=era5_precip_table
+
+r.hydro.hbv dataset=custom precipitation_table=era5_precip_table \
+  temperature=temp.csv evapotranspiration=evap.csv eta_observed=etobs.csv \
+  discharge_observed=dischargeobs.csv basins_vector=basins_v \
+  n_calib_steps=1000 n_years=3 warmup=100 n_realizations=1000 \
+  output=/tmp/hbv_era5
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.hydro.hbv.html">r.hydro.hbv</a>,
+<a href="r.hydro.hbv.basins.html">r.hydro.hbv.basins</a>,
+<a href="t.rast.univar.html">t.rast.univar</a>,
+<a href="t.rast.import.html">t.rast.import</a>,
+<a href="t.create.html">t.create</a>,
+<a href="t.register.html">t.register</a>
+</em>
+
+<h2>AUTHOR</h2>
+
+Yann Chemin
