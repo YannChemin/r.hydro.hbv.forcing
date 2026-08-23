@@ -51,6 +51,7 @@
 import atexit
 import csv
 import io
+import math
 import sys
 
 import grass.script as gs
@@ -86,7 +87,7 @@ def main():
         "t.rast.univar",
         input=options["strds"],
         zones=options["basins"],
-        format="csv",
+        separator="comma",
     ).strip()
     reader = csv.DictReader(io.StringIO(stats))
 
@@ -113,13 +114,18 @@ def main():
             date = row["start"].split(" ")[0]  # "YYYY-MM-DD HH:MM:SS" -> date
             try:
                 mean = float(row["mean"])
+                if math.isnan(mean):
+                    raise ValueError
             except (KeyError, ValueError):
                 # a zone with no valid (non-NULL) cells for this
-                # timestep -- t.rast.univar leaves "mean" blank rather
-                # than reporting 0, which a plain float() re-validates
-                # here since db.in.ogr's CSV driver otherwise aborts
-                # the whole import on the first such row instead of
-                # just skipping it.
+                # timestep -- t.rast.univar reports this as either a
+                # blank field or the literal string "nan" (which
+                # float() happily parses *into* a real NaN rather than
+                # raising, so isnan() has to be checked explicitly too)
+                # -- either way db.in.ogr's CSV driver aborts the whole
+                # import on the first such row instead of just skipping
+                # it, so this has to be caught before it ever reaches
+                # the CSV.
                 gs.warning(
                     "Zone %d has no valid mean for %s -- skipped"
                     % (zone, date)
