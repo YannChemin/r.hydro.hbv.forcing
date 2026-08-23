@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.pyo
+OBJ.*/
+*.tmp.html
